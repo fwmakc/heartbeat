@@ -1,0 +1,19 @@
+# Лимиты и тарифы. Примонтируется снаружи, перечитывается по SIGHUP — пересборка не нужна.
+# По умолчанию — лимиты на клиента; tariffs — рубли за месяц (наружу, в биллинг).
+
+default:
+  messages_per_minute: 60
+  messages_per_day: 10000
+
+tariffs:
+  basic:
+    price_rub: 300
+    messages_per_minute: 60
+    messages_per_day: 10000
+  pro:
+    price_rub: 500
+    messages_per_minute: 300
+    messages_per_day: 100000
+
+# Порядок фолбэка, если клиент не задал свой.
+fallback_chain: [telegram, max, sms, call, email]
