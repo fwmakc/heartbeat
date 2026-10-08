@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://heartbeat:changeit@localhost:5432/heartbeat"
 
     telegram_bot_token: str = ""
+    telegram_max_retries: int = 3
+    telegram_backoff_base: float = 0.5
     max_api_base_url: str = ""
     max_api_token: str = ""
     sms_provider_base_url: str = ""

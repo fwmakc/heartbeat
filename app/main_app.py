@@ -24,7 +24,11 @@ from app.infrastructure.settings import Settings
 def build_channels(settings: Settings) -> dict[str, BaseChannel]:
     """Реестр каналов. Новый канал = новый адаптер + строка здесь, бизнес-логика не трогается."""
     return {
-        "telegram": TelegramAdapter(settings.telegram_bot_token),
+        "telegram": TelegramAdapter(
+            settings.telegram_bot_token,
+            max_retries=settings.telegram_max_retries,
+            backoff_base=settings.telegram_backoff_base,
+        ),
         "max": MaxAdapter(settings.max_api_base_url, settings.max_api_token),
         "sms": SmsAdapter(settings.sms_provider_base_url, settings.sms_provider_api_key),
         "call": CallAdapter(settings.call_provider_base_url, settings.call_provider_api_key),

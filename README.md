@@ -9,7 +9,10 @@
 
 - `app/domain/` — сущности и порты, без зависимостей от инфраструктуры
 - `app/application/` — сценарии: фолбэк-оркестратор, статистика
-- `app/adapters/channels/` — любой канал за интерфейсом `BaseChannel` (`send -> DeliveryResult`)
+- `app/adapters/channels/` — любой канал за интерфейсом `BaseChannel` (`send -> DeliveryResult`).
+  Telegram: ретраи на 429/5xx/сеть (пауза `backoff_base * 2^attempt`, 429 уважает
+  `Retry-After`), 4xx — постоянная ошибка, фолбэк срабатывает сразу; поведение
+  настраивается через `TELEGRAM_MAX_RETRIES` / `TELEGRAM_BACKOFF_BASE`.
 - `app/adapters/storage/` — Postgres (SQLAlchemy 2 + asyncpg), alembic-миграции
 - `app/infrastructure/` — настройки, TTL-кеш, лимиты из YAML с reload по SIGHUP
 - `app/api/` — FastAPI-роуты
