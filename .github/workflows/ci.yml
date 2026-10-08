@@ -17,9 +17,9 @@ jobs:
           cache: npm
       # Железные гейты: порядок строгий, первый красный — стоп.
       - run: npm ci
-      - name: lint (eslint)
+      - name: lint (oxlint)
         run: npm run lint
-      - name: typecheck (tsc --noEmit, strict)
+      - name: typecheck (tsc --noEmit, strict, TS 7 native)
         run: npm run typecheck
       - name: test (vitest)
         run: npm test

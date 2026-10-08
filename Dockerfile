@@ -1,5 +1,5 @@
 # build: зависимости + компиляция TS
-FROM node:22-slim AS build
+FROM node:24-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -9,7 +9,7 @@ RUN npm run build && npm prune --omit=dev
 
 # финальный образ: distroless, без шелла — атаковать нечего.
 # SIGHUP доходит только при exec-форме ENTRYPOINT, никакого sh -c.
-FROM gcr.io/distroless/nodejs22-debian12:nonroot
+FROM gcr.io/distroless/nodejs24-debian12:nonroot
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules

@@ -3,8 +3,9 @@
 Шлюз гарантированной доставки уведомлений для малого/среднего B2B: API интеграции,
 каналы с фолбэками (telegram → max → sms → call → email), статистика доставки.
 
-**Стек:** Node 22 LTS (pinned) + TypeScript strict, Fastify, Postgres (`pg` без ORM),
-distroless-образ. Один рантайм, один локфайл, никаких микросервисов, пока не упрёмся.
+**Стек:** Node 24 LTS (pinned) + TypeScript 7 (нативный компилятор), strict,
+Fastify, Postgres (`pg` без ORM), oxlint, distroless-образ. Один рантайм, один
+локфайл, никаких микросервисов, пока не упрёмся.
 
 ## Архитектура
 
@@ -77,8 +78,11 @@ docker kill -s HUP <app-container>
 
 ```bash
 npm ci
-npm run lint        # eslint + typescript-eslint
-npm run typecheck   # tsc --noEmit, strict + noUncheckedIndexedAccess
+npm run lint        # oxlint
+npm run typecheck   # tsc --noEmit (TS 7, strict + noUncheckedIndexedAccess)
 npm test            # vitest
 npm audit --omit=dev --audit-level=high
 ```
+
+> Линтер — oxlint: typescript-eslint ещё не поддерживает TS 7 (peer < 6.1).
+> Как только выйдет typescript-eslint с поддержкой TS 7 — возвращаемся.
