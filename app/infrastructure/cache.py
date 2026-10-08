@@ -25,3 +25,15 @@ class TTLCache:
             self._store.clear()
         else:
             self._store.pop(key, None)
+
+    async def aget_or_set(
+        self, key: str, loader: Callable[[], Any], ttl: float | None = None
+    ) -> Any:
+        """Вариант для async-loader'ов: resolve ключа/API ходит в БД."""
+        entry = self._store.get(key)
+        now = time.monotonic()
+        if entry is not None and entry[0] > now:
+            return entry[1]
+        value = await loader()
+        self._store[key] = (now + (ttl if ttl is not None else self._default_ttl), value)
+        return value

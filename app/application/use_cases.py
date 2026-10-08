@@ -80,3 +80,30 @@ class GetDeliveryStats:
 
     async def execute(self) -> dict[str, dict[str, int]]:
         return await self._attempts.stats_by_channel()
+
+
+class ListMessages:
+    """Последние сообщения клиента для кабинета."""
+
+    def __init__(self, messages: MessageRepository) -> None:
+        self._messages = messages
+
+    async def execute(self, client_id: uuid.UUID, limit: int = 20) -> list[Message]:
+        return await self._messages.recent(client_id, limit)
+
+
+class GetMessageDetail:
+    """Сообщение + все попытки доставки по каналам."""
+
+    def __init__(
+        self, messages: MessageRepository, attempts: AttemptRepository
+    ) -> None:
+        self._messages = messages
+        self._attempts = attempts
+
+    async def execute(self, client_id: uuid.UUID, message_id: uuid.UUID) -> Message | None:
+        message = await self._messages.get(message_id)
+        if message is None or message.client_id != client_id:
+            return None  # чужое сообщение не подсвечиваем
+        message.attempts = await self._attempts.for_message(message_id)
+        return message

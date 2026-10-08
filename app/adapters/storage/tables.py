@@ -20,11 +20,24 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class ClientRow(Base):
+    __tablename__ = "clients"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    api_key_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+
+
 class MessageRow(Base):
     __tablename__ = "messages"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    client_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    client_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False, index=True
+    )
     recipient: Mapped[str] = mapped_column(String(512), nullable=False)
     text: Mapped[str] = mapped_column(String(4096), nullable=False)
     channels: Mapped[str] = mapped_column(String(256), nullable=False)  # csv, порядок = фолбэк

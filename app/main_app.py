@@ -13,7 +13,9 @@ from app.adapters.channels.base import BaseChannel
 from app.adapters.channels.stubs import CallAdapter, EmailAdapter, MaxAdapter, SmsAdapter
 from app.adapters.channels.telegram import TelegramAdapter
 from app.adapters.storage.engine import create_engine, create_session_factory
-from app.api.routes import router
+from app.adapters.storage.repositories import PgApiKeyLookup
+from app.api.routes import cabinet_router, router
+from app.infrastructure.api_keys import ApiKeyResolver
 from app.infrastructure.cache import TTLCache
 from app.infrastructure.limits import LimitsProvider
 from app.infrastructure.settings import Settings
@@ -56,7 +58,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.channels = channels
     app.state.limits = limits
     app.state.cache = cache
+    app.state.resolve_api_key = ApiKeyResolver(PgApiKeyLookup(session_factory), cache).resolve
 
     app.include_router(router)
+    app.include_router(cabinet_router)
     Instrumentator().instrument(app).expose(app)
     return app

@@ -7,6 +7,7 @@ import uuid
 from app.adapters.channels.base import BaseChannel, ChannelError
 from app.domain.models import (
     AttemptStatus,
+    Client,
     DeliveryAttempt,
     Message,
 )
@@ -49,6 +50,20 @@ class FakeAttemptRepository:
             stats.setdefault(a.channel.value, {}).setdefault(a.status.value, 0)
             stats[a.channel.value][a.status.value] += 1
         return stats
+
+    async def for_message(self, message_id: uuid.UUID) -> list[DeliveryAttempt]:
+        return [a for a in self.items if a.message_id == message_id]
+
+
+class FakeClientRepository:
+    def __init__(self) -> None:
+        self.by_hash: dict[str, uuid.UUID] = {}
+
+    async def get_id_by_key_hash(self, key_hash: str) -> uuid.UUID | None:
+        return self.by_hash.get(key_hash)
+
+    async def add(self, client: Client) -> None:
+        self.by_hash[client.api_key_hash] = client.id
 
 
 OK = AttemptStatus.OK
