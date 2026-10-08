@@ -1,18 +1,22 @@
-# builder: ставим зависимости в /app/deps
-FROM python:3.11-slim AS builder
+# build: зависимости + компиляция TS
+FROM node:22-slim AS build
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/app/deps -r requirements.txt
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build && npm prune --omit=dev
 
 # финальный образ: distroless, без шелла — атаковать нечего.
 # SIGHUP доходит только при exec-форме ENTRYPOINT, никакого sh -c.
-FROM gcr.io/distroless/python3-debian12:nonroot
+FROM gcr.io/distroless/nodejs22-debian12:nonroot
 WORKDIR /app
-COPY --from=builder /app/deps /app/deps
-COPY app ./app
+ENV NODE_ENV=production
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY package.json ./
 COPY config ./config
 COPY migrations ./migrations
-COPY alembic.ini main.py ./
-ENV PYTHONPATH=/app:/app/deps/lib/python3.11/site-packages
+USER nonroot:nonroot
 EXPOSE 8000
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["/nodejs/bin/node", "dist/main.js"]

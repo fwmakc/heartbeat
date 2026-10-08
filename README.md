@@ -3,30 +3,34 @@
 Шлюз гарантированной доставки уведомлений для малого/среднего B2B: API интеграции,
 каналы с фолбэками (telegram → max → sms → call → email), статистика доставки.
 
+**Стек:** Node 22 LTS (pinned) + TypeScript strict, Fastify, Postgres (`pg` без ORM),
+distroless-образ. Один рантайм, один локфайл, никаких микросервисов, пока не упрёмся.
+
 ## Архитектура
 
-Монолит с чистыми слоями, микросервисы начнём, когда упрёмся:
+Монолит с чистыми слоями:
 
-- `app/domain/` — сущности и порты, без зависимостей от инфраструктуры
-- `app/application/` — сценарии: фолбэк-оркестратор, статистика
-- `app/adapters/channels/` — любой канал за интерфейсом `BaseChannel` (`send -> DeliveryResult`).
-  Telegram: ретраи на 429/5xx/сеть (пауза `backoff_base * 2^attempt`, 429 уважает
-  `Retry-After`), 4xx — постоянная ошибка, фолбэк срабатывает сразу; поведение
-  настраивается через `TELEGRAM_MAX_RETRIES` / `TELEGRAM_BACKOFF_BASE`.
-- `app/adapters/storage/` — Postgres (SQLAlchemy 2 + asyncpg), alembic-миграции
-- `app/infrastructure/` — настройки, TTL-кеш, лимиты из YAML с reload по SIGHUP
-- `app/api/` — FastAPI-роуты
+- `src/domain/` — сущности и порты, без зависимостей от инфраструктуры
+- `src/application/` — сценарии: фолбэк-оркестратор, статистика, история
+- `src/adapters/channels/` — любой канал за интерфейсом `BaseChannel` (`send -> DeliveryResult`).
+  Telegram: ретраи на 429/5xx/сеть (пауза `backoffBaseMs * 2^attempt`, 429 уважает
+  `Retry-After`), 4xx — постоянная ошибка, фолбэк срабатывает сразу; настраивается
+  через `TELEGRAM_MAX_RETRIES` / `TELEGRAM_BACKOFF_BASE_MS`
+- `src/adapters/storage/` — Postgres + мини-мигратор (`migrations/*.sql` по порядку)
+- `src/infrastructure/` — конфиг, TTL-кеш, лимиты из YAML с reload по SIGHUP, ключи
+- `src/api/` — Fastify-маршруты, кабинет, метрики
 
 ## Запуск
 
 ```bash
 cp .env.example .env   # заполнить токены
-pip install -r requirements.txt
-alembic upgrade head
-python main.py         # точка входа одна
+npm ci
+npm run build
+npm run typecheck && npm run lint && npm test   # гейты, как в CI
+node dist/main.js
 ```
 
-Или целиком: `docker compose up --build`.
+Миграции применяются на старте автоматически. Или целиком: `docker compose up --build`.
 
 ## API
 
@@ -37,12 +41,13 @@ python main.py         # точка входа одна
 - `GET /v1/stats` — статистика доставки по каналам и статусам.
 - `GET /cabinet` — личный кабинет: статистика, история, детали попыток.
   Ключ вводится в форме и ходит только в заголовках — секретов в странице нет.
+- `GET /docs` — OpenAPI/Swagger.
 - `GET /v1/healthz`, `GET /metrics` — healthcheck и Prometheus.
 
 ### Выдача API-ключа
 
 ```bash
-python -m app.tools.add_client "Интернет-магазин Рога и Копыта"
+node dist/tools/addClient.js "Интернет-магазин Рога и Копыта"
 ```
 
 Ключ показывается один раз, в БД лежит sha256; резолв ключа кешируется в памяти
@@ -60,7 +65,7 @@ docker kill -s HUP <app-container>
 
 ## Эксплуатация
 
-- **Деплой** — только тегированный релиз через CI (`git tag v0.1.0 && git push --tags`).
+- **Деплой** — только тегированный релиз через CI (`git tag v0.2.0 && git push --tags`).
   Руками в прод никто не ходит. `latest` на проде запрещён.
 - **Окружения** — staging и prod: что не проехало staging, в prod не садится.
 - **Откат** — redeploy предыдущего тега, ~5 минут. Никаких правок по SSH в пятницу вечером.
@@ -68,9 +73,12 @@ docker kill -s HUP <app-container>
   heartbeat-эндпоинт заглох.
 - **Бэкапы** — Postgres ежедневно (`pg_dump` по cron), проверять восстановление, а не только наличие файла.
 
-## Тесты
+## Гейты качества (как в CI, порядок строгий)
 
 ```bash
-pip install -r requirements-dev.txt
-ruff check . && pytest -q
+npm ci
+npm run lint        # eslint + typescript-eslint
+npm run typecheck   # tsc --noEmit, strict + noUncheckedIndexedAccess
+npm test            # vitest
+npm audit --omit=dev --audit-level=high
 ```

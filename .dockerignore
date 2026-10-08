@@ -1,9 +1,8 @@
 .git
-.venv
-__pycache__
-*.pyc
-tests
+node_modules
+dist
+coverage
 .env
-.pytest_cache
-.ruff_cache
+*.log
 .github
+test

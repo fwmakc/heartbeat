@@ -11,13 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: "3.11"
-          cache: pip
-      - run: pip install -r requirements.txt -r requirements-dev.txt
-      - run: ruff check .
-      - run: pytest -q
+          node-version-file: .nvmrc
+          cache: npm
+      # Железные гейты: порядок строгий, первый красный — стоп.
+      - run: npm ci
+      - name: lint (eslint)
+        run: npm run lint
+      - name: typecheck (tsc --noEmit, strict)
+        run: npm run typecheck
+      - name: test (vitest)
+        run: npm test
+      - name: audit зависимостей
+        run: npm audit --omit=dev --audit-level=high
 
   build:
     # Образ собирается ТОЛЬКО по тегу. latest на прод не катим.
